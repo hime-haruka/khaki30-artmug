@@ -4,7 +4,7 @@
   var PROD_IFRAME_ORIGIN = 'https://hime-haruka.github.io';
   var IFRAME_PATH = '/khaki30-artmug';
   var IFRAME_SELECTOR = 'section[name="am-root"] iframe[src*="hime-haruka.github.io/khaki30-artmug"], [name="am-root"] iframe[src*="hime-haruka.github.io/khaki30-artmug"], iframe[src*="hime-haruka.github.io/khaki30-artmug"], iframe[data-khaki30-artmug], section[name="am-root"] iframe';
-  var STYLE_ID = 'khaki30-artmug-parent-style-v20';
+  var STYLE_ID = 'khaki30-artmug-parent-style-v21';
   var lastHeight = 0;
   var retryTimer = null;
 
@@ -134,6 +134,13 @@ body.khaki30-artmug-theme #topUtil .menuTop_s ul{background:var(--kh-deep)!impor
 body.khaki30-artmug-theme #topUtil .menuTop_s ul:hover{background:#2f422b!important}
 body.khaki30-artmug-theme #topUtil .badge,
 body.khaki30-artmug-theme #topUtil .cnt_bbs{background:#fff!important;color:var(--kh-deep)!important}
+body.khaki30-artmug-theme #topUtil #logo,
+body.khaki30-artmug-theme #topUtil .logo,
+body.khaki30-artmug-theme #topUtil [class*="logo"]{background:transparent!important}
+body.khaki30-artmug-theme #topUtil #logo img,
+body.khaki30-artmug-theme #topUtil .logo img,
+body.khaki30-artmug-theme #topUtil [class*="logo"] img,
+body.khaki30-artmug-theme #topUtil img[src*="logo"]{filter:hue-rotate(72deg) saturate(.58) brightness(.9)!important}
 
 body.khaki30-artmug-theme .orange,
 body.khaki30-artmug-theme .lorange,
