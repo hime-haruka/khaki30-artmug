@@ -140,7 +140,7 @@ body.khaki30-artmug-theme #topUtil [class*="logo"]{background:transparent!import
 body.khaki30-artmug-theme #topUtil #logo img,
 body.khaki30-artmug-theme #topUtil .logo img,
 body.khaki30-artmug-theme #topUtil [class*="logo"] img,
-body.khaki30-artmug-theme #topUtil img[src*="logo"]{filter:hue-rotate(72deg) saturate(.58) brightness(.9)!important}
+body.khaki30-artmug-theme #topUtil img[src*="logo"]{filter:hue-rotate(78deg) saturate(.18) brightness(1.325)!important}
 
 body.khaki30-artmug-theme .orange,
 body.khaki30-artmug-theme .lorange,
@@ -204,7 +204,9 @@ body.khaki30-artmug-theme #receive_Y{
   box-shadow:none!important;
 }
 body.khaki30-artmug-theme #goodsInfo .head,
-body.khaki30-artmug-theme #goodsOrder .head{
+body.khaki30-artmug-theme #goodsOrder .head,
+body.khaki30-artmug-theme #goodsInfo .head *,
+body.khaki30-artmug-theme #goodsOrder .head *{
   background:var(--kh-deep)!important;
   color:#fff!important;
 }
@@ -217,7 +219,9 @@ body.khaki30-artmug-theme #goodsOrder .orderline,
 body.khaki30-artmug-theme #goodsOrder .optionline{border-top-color:rgba(64,90,55,.42)!important}
 
 body.khaki30-artmug-theme #cont_after .listTh,
-body.khaki30-artmug-theme #cont_qna .listTh{
+body.khaki30-artmug-theme #cont_qna .listTh,
+body.khaki30-artmug-theme #cont_after .listTh *,
+body.khaki30-artmug-theme #cont_qna .listTh *{
   background:var(--kh-deep)!important;
   color:#fff!important;
   border-color:var(--kh-deep)!important;
