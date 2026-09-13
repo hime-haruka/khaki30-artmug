@@ -7,6 +7,8 @@
   var STYLE_ID = 'khaki30-artmug-parent-style-v21';
   var lastHeight = 0;
   var retryTimer = null;
+  var cachedIframe = null;
+  var viewportFrame = 0;
 
   var scriptUrl = (document.currentScript && document.currentScript.src) || '';
   var assetBase = './';
@@ -33,7 +35,6 @@
 :root{--kh-olive:#97ac82;--kh-olive-2:#879d73;--kh-olive-3:#71875f;--kh-deep:#405a37;--kh-deep-2:#31472b;--kh-pale:#edf2e8;--kh-pale-2:#f5f7f1;--kh-paper:#f7f8f1;--kh-line:rgba(86,115,76,.16);--kh-line-strong:rgba(86,115,76,.28)}
 
 
-/* ===== 아트머그 부모 페이지 올리브 리컬러 ===== */
 html body #wrapBody .orange,
 html body #wrapBody font.orange,
 html body #wrapBody .noticeIcon_o,
@@ -120,7 +121,6 @@ html body #wrapBody #cont_qna a:hover,
 html body #wrapBody #cont_after a:hover{color:var(--kh-olive-3)!important}
 
 
-/* ===== 아트머그 원본 팔레트 전체 교체 v16 ===== */
 body.khaki30-artmug-theme #topUtil{
   background:var(--kh-olive)!important;
   border-bottom:1px solid rgba(64,90,55,.14)!important;
@@ -237,7 +237,6 @@ body.khaki30-artmug-theme #cont_qna .reply_btn_bk:hover{background:#2f422b!impor
 body.khaki30-artmug-theme #main_search .sch_box{border-color:var(--kh-olive)!important}
 body.khaki30-artmug-theme #simple_guide .tab_on{border-bottom-color:var(--kh-olive)!important}
 
-/* 아트머그의 주황 공지 아이콘 이미지 자체도 올리브 SVG로 교체 */
 body.khaki30-artmug-theme .noticeIcon_o,
 body.khaki30-artmug-theme .noticeIcon_o2,
 body.khaki30-artmug-theme .noticeDiv{
@@ -261,7 +260,6 @@ body.khaki30-artmug-theme .noticeDiv:before{
   text-align:center;
 }
 
-/* 인라인으로 박힌 원색 주황까지 현재 상세 페이지에서 강제 치환 */
 body.khaki30-artmug-theme [style*="#ff5e26"],
 body.khaki30-artmug-theme [style*="#ff5200"],
 body.khaki30-artmug-theme [style*="#ff4d0f"],
@@ -271,7 +269,6 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
   border-color:var(--kh-olive)!important;
 }
 
-/* ===== 실제 아트머그 iframe 주변 ===== */
 #detailViews.khaki30-detail-zone{
   position:relative!important;
   isolation:isolate!important;
@@ -317,7 +314,6 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
 
 
 
-/* 문의/후기 구간도 iframe 이후 분위기 끊기지 않게 */
 .khaki30-after-zone{position:relative!important;isolation:isolate!important;border-radius:34px;margin-top:36px!important;padding-left:34px!important;padding-right:34px!important;background:linear-gradient(180deg,rgba(248,249,243,.78),rgba(240,245,235,.72))!important;box-shadow:0 18px 54px rgba(86,115,76,.08)}
 .khaki30-after-zone>#cont_qna,.khaki30-after-zone>#cont_after{position:relative;z-index:2}
 
@@ -327,7 +323,6 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
 
 
 
-/* ===== 퀵메뉴 ===== */
 .khaki30-floating-nav{position:fixed;top:118px;right:22px;z-index:999999;width:200px;font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;color:var(--kh-deep)}
 .khaki30-floating-nav__inner{overflow:hidden;border:1px solid rgba(86,115,76,.20);border-radius:18px;background:rgba(248,249,243,.95);padding:10px;box-shadow:0 15px 38px rgba(63,85,55,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .khaki30-floating-nav__brand{padding:11px 10px 10px;color:var(--kh-deep);font-family:Georgia,serif;font-size:14px;letter-spacing:.08em;text-align:center}
@@ -372,21 +367,6 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
 
 
 
-/* v17: mask 대신 실제 PNG를 써서 브라우저/호스팅 환경에서도 확실히 보이게 */
-
-
-
-
-
-
-
-
-
-
-
-/* 문의/후기 영역도 png를 직접 사용 */
-
-
 @media(max-width:1280px){}
 @media(max-width:900px){}
 
@@ -410,30 +390,6 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
 
 @media(max-width:1280px){}
 @media(max-width:900px){}
-
-
-
-
-
-
-
-
-
-
-
-
-/* ===== final art direction v20 ===== */
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -468,7 +424,11 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
     document.head.appendChild(style);
   }
 
-  function getIframe() { return document.querySelector(IFRAME_SELECTOR); }
+  function getIframe() {
+    if (cachedIframe && cachedIframe.isConnected) return cachedIframe;
+    cachedIframe = document.querySelector(IFRAME_SELECTOR);
+    return cachedIframe;
+  }
 
   function getIframeOrigin(iframe) {
     if (!iframe) return PROD_IFRAME_ORIGIN;
@@ -479,17 +439,21 @@ body.khaki30-artmug-theme [style*="rgb(255, 82, 0)"]{
   function getPageScrollY() { return window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0; }
 
   function sendViewport() {
-    var iframe = getIframe();
-    if (!iframe || !iframe.contentWindow) return;
-    var rect = iframe.getBoundingClientRect();
-    iframe.contentWindow.postMessage({
-      source: 'syura-artmug-parent',
-      type: 'SYURA_PARENT_VIEWPORT',
-      iframeTop: rect.top,
-      iframeHeight: rect.height,
-      viewportHeight: window.innerHeight || document.documentElement.clientHeight || 0,
-      scrollY: getPageScrollY()
-    }, getIframeOrigin(iframe));
+    if (viewportFrame) return;
+    viewportFrame = window.requestAnimationFrame(function () {
+      viewportFrame = 0;
+      var iframe = getIframe();
+      if (!iframe || !iframe.contentWindow) return;
+      var rect = iframe.getBoundingClientRect();
+      iframe.contentWindow.postMessage({
+        source: 'syura-artmug-parent',
+        type: 'SYURA_PARENT_VIEWPORT',
+        iframeTop: rect.top,
+        iframeHeight: rect.height,
+        viewportHeight: window.innerHeight || document.documentElement.clientHeight || 0,
+        scrollY: getPageScrollY()
+      }, getIframeOrigin(iframe));
+    });
   }
 
   function requestChildScroll(sectionId) {

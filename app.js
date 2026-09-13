@@ -30,7 +30,8 @@
     toastTimer: null,
     parentViewport: null,
     motionBound: false,
-    motionTicking: false
+    motionTicking: false,
+    revealItems: []
   };
 
   function csvUrl(gid) {
@@ -439,11 +440,6 @@
       }
 
       board.addEventListener('mouseover', function (event) {
-        var target = event.target.closest('.calendar-span');
-        if (!target) return;
-        showTooltip(target, event.clientX, event.clientY);
-      });
-      board.addEventListener('mousemove', function (event) {
         var target = event.target.closest('.calendar-span');
         if (!target) return;
         showTooltip(target, event.clientX, event.clientY);
@@ -909,13 +905,19 @@
     return { top: scrollTop, bottom: scrollTop + height, height: height };
   }
 
+  function refreshRevealMetrics() {
+    state.revealItems = Array.prototype.map.call(document.querySelectorAll('.will-reveal'), function (element) {
+      return { element: element, top: elementDocumentTop(element), height: element.offsetHeight };
+    });
+  }
+
   function runViewportAnimations() {
     var viewport = currentViewportRange();
     if (!viewport.height) return;
     document.documentElement.style.setProperty('--float-shift', Math.max(-18, Math.min(30, viewport.top * 0.035)) + 'px');
-    document.querySelectorAll('.will-reveal').forEach(function (element) {
-      var top = elementDocumentTop(element);
-      var visible = elementRangeInView(top, element.offsetHeight, viewport.top, viewport.bottom, viewport.height, element.classList.contains('is-inview'));
+    state.revealItems.forEach(function (item) {
+      var element = item.element;
+      var visible = elementRangeInView(item.top, item.height, viewport.top, viewport.bottom, viewport.height, element.classList.contains('is-inview'));
       element.classList.toggle('is-inview', visible);
     });
   }
@@ -952,6 +954,7 @@
       element.classList.add('interactive-card');
     });
 
+    refreshRevealMetrics();
     refreshViewportAnimations();
     queueHeight();
   }
@@ -961,6 +964,7 @@
     state.motionBound = true;
     window.addEventListener('scroll', refreshViewportAnimations, { passive: true });
     window.addEventListener('resize', function () {
+      refreshRevealMetrics();
       refreshViewportAnimations();
       updateFloatingQuote();
     });
@@ -1010,7 +1014,10 @@
 
   function queueHeight() {
     clearTimeout(state.heightTimer);
-    state.heightTimer = setTimeout(sendHeight, 60);
+    state.heightTimer = setTimeout(function () {
+      refreshRevealMetrics();
+      sendHeight();
+    }, 80);
   }
 
   function updateParentViewport(data) {
