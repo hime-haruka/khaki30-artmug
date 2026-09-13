@@ -944,7 +944,8 @@ button {
 }
 
 .switch input:checked + span {
-  background: var(--olive);
+  background: #47603d;
+  box-shadow: inset 0 0 0 1px rgba(49, 71, 43, 0.22), 0 3px 8px rgba(49, 71, 43, 0.16);
 }
 
 .switch input:checked + span::after {
@@ -3674,7 +3675,6 @@ body {
   border-color: rgba(86, 115, 76, 0.28);
 }
 
-.switch input:checked + span,
 .counter button,
 .choice-card input:checked + label {
   background: rgba(151, 172, 130, 0.18);
