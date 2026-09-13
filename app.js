@@ -4,6 +4,11 @@
   var SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQegaIJ_GbYBF-DxvnHysVCQqO2aVqZLGM2UpYzsvTUXRwY2ao_cOL7Uj1W7Q2VgruESLW0ReDicMRw/pub';
   var META_GID = '0';
   var PRICE_META_GID = '191264487';
+  var FACIAL_GID = '1398739865';
+  var FALLBACK_FACIAL = [
+    { order: '1', name: '페이셜 샘플', desc: '일러스트 기반 성형 / 페이셜 / 뚜따', aritist: 'KHAKI30', youtube_url: 'https://youtu.be/p-tYFY-eDJ8?si=3AUNCURSV4A2u8r4' },
+    { order: '2', name: '페이셜 샘플', desc: '일러스트 기반 성형 / 페이셜 / 뚜따', aritist: 'KHAKI30', youtube_url: 'https://youtu.be/oiNe5PqIjlY?si=gYD3FQy1Tu6rwQlp' }
+  ];
   var SPECIAL_ITEM_NAMES = ['전용 의상', '전용 헤어', '전용 악세서리', '비전용 의상', '비전용 헤어', '비전용 악세서리'];
   var FALLBACK_META = [
     { order: '1', id: 'intro', title: '', subtitle: '', desc: '', gid: '235383793', visible: 'TRUE' },
@@ -31,7 +36,8 @@
     parentViewport: null,
     motionBound: false,
     motionTicking: false,
-    revealItems: []
+    revealItems: [],
+    facialRows: []
   };
 
   function csvUrl(gid) {
@@ -602,8 +608,112 @@
     }, { once: true });
   }
 
+  function youtubeId(value) {
+    var source = String(value || '').trim();
+    if (!source) return '';
+    if (/^[A-Za-z0-9_-]{11}$/.test(source)) return source;
+    var normalized = source;
+    if (!/^https?:\/\//i.test(normalized)) normalized = 'https://' + normalized.replace(/^\/+/, '');
+    try {
+      var url = new URL(normalized);
+      var host = url.hostname.replace(/^www\./, '').toLowerCase();
+      var path = url.pathname.split('/').filter(Boolean);
+      if (host === 'youtu.be' && path[0]) return path[0].slice(0, 11);
+      if (/youtube(?:-nocookie)?\.com$/.test(host)) {
+        var queryId = url.searchParams.get('v');
+        if (queryId) return queryId.slice(0, 11);
+        var marker = path[0];
+        if ((marker === 'embed' || marker === 'shorts' || marker === 'live') && path[1]) return path[1].slice(0, 11);
+      }
+    } catch (error) {}
+    var match = source.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/i);
+    return match ? match[1] : '';
+  }
+
+  function youtubeThumb(id, quality) {
+    return 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/' + (quality || 'maxresdefault') + '.jpg';
+  }
+
+  function bindYoutubeThumbnail(img) {
+    if (!img) return;
+    var qualities = ['maxresdefault', 'sddefault', 'hqdefault'];
+    var level = 0;
+    img.addEventListener('error', function () {
+      level += 1;
+      if (level < qualities.length) img.src = youtubeThumb(img.dataset.youtubeId, qualities[level]);
+      else img.closest('.facial-preview-thumb').classList.add('is-broken');
+    });
+  }
+
+  function bindPortfolioTabs() {
+    var section = document.getElementById('portfolio');
+    if (!section || section.dataset.tabsBound === '1') return;
+    section.dataset.tabsBound = '1';
+    section.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-portfolio-tab]');
+      if (!button) return;
+      var name = button.dataset.portfolioTab;
+      section.querySelectorAll('[data-portfolio-tab]').forEach(function (tab) {
+        var active = tab === button;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      section.querySelectorAll('[data-portfolio-panel]').forEach(function (panel) {
+        var active = panel.dataset.portfolioPanel === name;
+        panel.hidden = !active;
+        panel.classList.toggle('is-active', active);
+      });
+      queueHeight();
+      setTimeout(function () {
+        refreshRevealMetrics();
+        refreshViewportAnimations();
+      }, 0);
+    });
+  }
+
+  function renderFacialPreview(rows) {
+    var section = document.getElementById('portfolio');
+    bindPortfolioTabs();
+    var box = section ? section.querySelector('.facial-preview-grid') : null;
+    if (!box) return;
+    box.classList.remove('skeleton-block');
+    var sorted = (rows || []).filter(function (row) { return youtubeId(row.youtube_url); }).sort(function (a, b) { return numberValue(a.order) - numberValue(b.order); });
+    if (!sorted.length) {
+      box.innerHTML = '<div class="empty-state">등록된 페이셜 미리보기가 없습니다.</div>';
+      queueHeight();
+      return;
+    }
+    box.innerHTML = sorted.map(function (row) {
+      var id = youtubeId(row.youtube_url);
+      var title = row.name || '페이셜 샘플';
+      return '<article class="facial-preview-card"><button type="button" class="facial-preview-thumb" data-youtube-id="' + escapeHTML(id) + '" data-youtube-title="' + escapeHTML(title) + '" aria-label="' + escapeHTML(title) + ' 영상 열기"><img src="' + escapeHTML(youtubeThumb(id, 'maxresdefault')) + '" data-youtube-id="' + escapeHTML(id) + '" alt="' + escapeHTML(title) + ' 썸네일" loading="lazy"><span class="facial-play"><i class="bi bi-play-fill"></i></span></button><div class="portfolio-info"><strong>' + escapeHTML(title) + '</strong><p>' + richText(row.desc || '') + '</p><small>' + richText(row.aritist || row.artist || '') + '</small></div></article>';
+    }).join('');
+    box.querySelectorAll('.facial-preview-thumb img').forEach(bindYoutubeThumbnail);
+    box.querySelectorAll('.facial-preview-thumb').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openVideoLightbox(button.dataset.youtubeId, button.dataset.youtubeTitle || '페이셜 미리보기');
+      });
+    });
+    markRevealGroup('#portfolio .facial-preview-card', 40, 70);
+    box.querySelectorAll('.facial-preview-card').forEach(function (card) { card.classList.add('interactive-card'); });
+    refreshRevealMetrics();
+    refreshViewportAnimations();
+    queueHeight();
+  }
+
+  function loadFacialPreview() {
+    return fetchCSV(FACIAL_GID).then(function (rows) {
+      state.facialRows = rows && rows.length ? rows : FALLBACK_FACIAL;
+      renderFacialPreview(state.facialRows);
+    }).catch(function () {
+      state.facialRows = FALLBACK_FACIAL.slice();
+      renderFacialPreview(state.facialRows);
+    });
+  }
+
   function renderPortfolio(rows) {
     var section = document.getElementById('portfolio');
+    bindPortfolioTabs();
     var box = section.querySelector('.portfolio-grid');
     section.classList.remove('section-loading');
     box.classList.remove('skeleton-block');
@@ -975,7 +1085,12 @@
 
   function openLightbox(src, alt) {
     var lightbox = document.getElementById('lightbox');
-    var image = lightbox.querySelector('img');
+    var image = lightbox.querySelector('.lightbox-media > img');
+    var video = lightbox.querySelector('.lightbox-video');
+    var iframe = video.querySelector('iframe');
+    iframe.src = '';
+    video.hidden = true;
+    image.hidden = false;
     image.src = src;
     image.alt = alt || '포트폴리오 크게 보기';
     lightbox.classList.add('is-open');
@@ -983,10 +1098,31 @@
     if (window.parent === window) document.body.style.overflow = 'hidden';
   }
 
+  function openVideoLightbox(id, title) {
+    if (!id) return;
+    var lightbox = document.getElementById('lightbox');
+    var image = lightbox.querySelector('.lightbox-media > img');
+    var video = lightbox.querySelector('.lightbox-video');
+    var iframe = video.querySelector('iframe');
+    image.hidden = true;
+    video.hidden = false;
+    iframe.title = title || '페이셜 미리보기';
+    iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(id) + '?autoplay=1&rel=0&playsinline=1&modestbranding=1&vq=hd1080&hd=1';
+    lightbox.classList.add('is-open');
+    lightbox.setAttribute('aria-hidden', 'false');
+    if (window.parent === window) document.body.style.overflow = 'hidden';
+  }
+
   function closeLightbox() {
     var lightbox = document.getElementById('lightbox');
+    var image = lightbox.querySelector('.lightbox-media > img');
+    var video = lightbox.querySelector('.lightbox-video');
+    var iframe = video.querySelector('iframe');
     lightbox.classList.remove('is-open');
     lightbox.setAttribute('aria-hidden', 'true');
+    iframe.src = '';
+    video.hidden = true;
+    image.hidden = false;
     if (window.parent === window) document.body.style.overflow = '';
   }
 
@@ -1186,6 +1322,7 @@
     bindParentBridge();
     bindMotionHandlers();
     Promise.all([loadMeta(), loadPriceMeta()]).then(function () {
+      loadFacialPreview();
       return loadSections();
     }).then(renderLoadedSections).catch(function () {
       ['intro', 'calendar', 'process', 'notice', 'price', 'portfolio'].forEach(function (id) {
