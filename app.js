@@ -195,7 +195,7 @@
     }
     profile.innerHTML = '<div class="profile-name"><strong>' + escapeHTML(item.name || 'KHAKI30') + '</strong><span>' + escapeHTML(item.sub || '카키 30') + '</span></div><p class="profile-desc">' + richText(item.desc || '') + '</p>';
     if (item.image) {
-      visual.innerHTML = '<img src="' + escapeHTML(item.image) + '" alt="' + escapeHTML(item.name || 'KHAKI30') + ' 대표 이미지" loading="eager">';
+      visual.innerHTML = '<img src="' + escapeHTML(imageUrl(item.image, 'w2000')) + '" alt="' + escapeHTML(item.name || 'KHAKI30') + ' 대표 이미지" loading="eager">';
       bindImageFallback(visual.querySelector('img'), visual);
     }
     queueHeight();
@@ -591,12 +591,33 @@
     queueHeight();
   }
 
-  function driveImage(url) {
+  function driveFileId(value) {
+    var source = String(value || '').trim();
+    if (!source) return '';
+    var directMatch = source.match(/\/file\/d\/([A-Za-z0-9_-]+)/i);
+    if (directMatch) return directMatch[1];
+    var pathMatch = source.match(/\/d\/([A-Za-z0-9_-]+)/i);
+    if (pathMatch && /(?:drive|docs)\.google\.com/i.test(source)) return pathMatch[1];
+    try {
+      var normalized = /^https?:\/\//i.test(source) ? source : 'https://' + source.replace(/^\/+/, '');
+      var parsed = new URL(normalized);
+      var host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+      if (!/(^|\.)drive\.google\.com$/.test(host) && !/(^|\.)docs\.google\.com$/.test(host) && !/(^|\.)driveusercontent\.google\.com$/.test(host)) return '';
+      var queryId = parsed.searchParams.get('id');
+      if (queryId) return queryId;
+      var parts = parsed.pathname.split('/').filter(Boolean);
+      var dIndex = parts.indexOf('d');
+      if (dIndex >= 0 && parts[dIndex + 1]) return parts[dIndex + 1];
+    } catch (error) {}
+    var idMatch = source.match(/[?&]id=([A-Za-z0-9_-]+)/i);
+    return idMatch ? idMatch[1] : '';
+  }
+
+  function imageUrl(url, size) {
     var source = String(url || '').trim();
-    var fileMatch = source.match(/\/file\/d\/([^/]+)/);
-    var idMatch = source.match(/[?&]id=([^&]+)/);
-    var id = fileMatch ? fileMatch[1] : (idMatch ? idMatch[1] : '');
-    return id ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w1600' : source;
+    if (!source) return '';
+    var id = driveFileId(source);
+    return id ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=' + encodeURIComponent(size || 'w1600') : source;
   }
 
   function bindImageFallback(img, container) {
@@ -724,7 +745,7 @@
     }
     var sorted = rows.slice().sort(function (a, b) { return numberValue(a.order) - numberValue(b.order); });
     box.innerHTML = sorted.map(function (row, index) {
-      var image = driveImage(row.image_url);
+      var image = imageUrl(row.image_url, 'w2000');
       return '<article class="portfolio-card"><div class="portfolio-image" data-lightbox-index="' + index + '"><img src="' + escapeHTML(image) + '" alt="' + escapeHTML(row.name || '포트폴리오') + '" loading="lazy"></div><div class="portfolio-info"><strong>' + escapeHTML(honorificName(row.name || 'Untitled')) + '</strong><p>' + richText(row.desc || '') + '</p><small>' + richText(row.aritist || row.artist || '') + '</small></div></article>';
     }).join('');
     box.querySelectorAll('.portfolio-image img').forEach(function (img) { bindImageFallback(img, img.closest('.portfolio-image')); });
