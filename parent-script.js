@@ -98,7 +98,8 @@ html body #wrapBody .listTh{border-color:var(--kh-line)!important;background:#f3
 html body #wrapBody .line_bottom,
 html body #wrapBody #list_qna tr>td,
 html body #wrapBody #list_after tr>td{border-color:rgba(86,115,76,.12)!important}
-html body #wrapBody .starBg{filter:hue-rotate(62deg) saturate(.58) brightness(.92)!important}
+html body #wrapBody .starBg,
+html body #wrapBody img[src*="skin/default/img/shop/icon_star.gif"]{filter:none!important}
 html body #wrapBody #paging2 .selected,
 html body #wrapBody #paging3 .selected{color:var(--kh-deep)!important;border-color:rgba(151,172,130,.28)!important;background:var(--kh-pale)!important}
 html body #wrapBody #paging2 .defaultOver,
